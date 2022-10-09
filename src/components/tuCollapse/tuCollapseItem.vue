@@ -1,183 +1,98 @@
 <template>
-	<details :open="maxHeight != '0px' ? true : false">
-		<summary>
-			<header class="tu-collapse-item--header" @click="toggleContent">
+	<div
+		:class="{ 'open-item': maxHeight != '0px', disabledx: disabled }"
+		class="tu-collapse-item"
+		@mouseover="mouseover"
+		@mouseout="mouseout"
+	>
+		<header class="tu-collapse-item--header" @click="toggleContent">
 			<slot name="header"></slot>
 			<span
 				v-if="!notArrow"
 				class="icon-header tu-collapse-item--icon-header"
 			>
-				<tu-icon :icon-pack="iconPack" :icon="iconArrow" />
+				<tu-icon :icon-pack="iconPack" :icon="arrow" />
 			</span>
 		</header>
-		</summary>
-			<div
-				ref="content"
-			>
-				<hr style="border-top: 1px solid #ffffff55; margin-bottom: 5px"/>
+		
+		<div
+			ref="content"
+			:style="styleContent"
+			class="tu-collapse-item--content"
+		>
+			<hr style="border-top: 1px solid #ffffff55; margin-bottom: 5px"/>
 
-				<div class="con-content--item">
-					<slot/>
-				</div>
+			<div class="con-content--item">
+				<slot />
 			</div>
-	</details>
+		</div>
+	</div>
 </template>
-<script lang="ts">
-import { computed, defineComponent, inject, onBeforeUnmount, onMounted, ref, Ref, watch } from 'vue';
-import tuicon from "../tuIcon";
-
-export default defineComponent({
-	name: "TuCollapseItem",
+<script>
+import { tuIcon } from "../tuIcon/tuIcon";
+export default {
+	name: "tuCollapseItem",
 	components: {
-		tuicon,
+		tuIcon
 	},
 	props: {
-		open: {
-			default: false,
-			type: Boolean,
-		},
-		disabled: {
-			default: false,
-			type: Boolean,
-		},
-		notArrow: {
-			default: false,
-			type: Boolean,
+		iconPack: {
+			type: String,
+			default: "material-icons"
 		},
 		iconArrow: {
-			default: "keyboard_arrow_down",
 			type: String,
+			default: "keyboard_arrow_down"
 		},
-		iconPack: {
-			default: "material-icons",
-			type: String,
-		},
-		sst: {
-			default: false,
+		notArrow: {
 			type: Boolean,
+			default: false
 		},
-	},
-	inject: [
-		"accordion",
-		"openHover",
-		"closeAllItems",
-		"emitChange"
-	],
-	setup(props, context) {
-		let maxHeight = ref("0px");
-		let dataReady = ref(false);
-		let content = ref<HTMLDivElement>();
-
-		//Inject components from parent to use in child
-		const accordion = inject<boolean>("accordion");
-		const openHover = inject<boolean>("openHover");
-		const closeAllItems = inject<Function>("closeAllItems");
-		const emitChange = inject<Function>("emitChange");
-
-		const styleContent = computed(() => {
-			return {
-				maxHeight: maxHeight.value
-			}
-		});
-
-		const changeHeight = function() {
-			const maxHeightx = content.value?.scrollHeight;
-			if (maxHeight.value != "0px") {
-				maxHeight.value = `${maxHeightx}px`;
-			}
-		};
-
-		const toggleContent = function() {
-			if (openHover || props.disabled) return;
-
-			if (accordion) {
-				closeAllItems?.call(null, content, maxHeight);
-			}
-
-			if (props.sst && !dataReady.value) {
-				context.emit("fetch", {
-					done: () => {
-						initMaxHeight();
-						dataReady.value = true;
-					},
-				});
-			} else {
-				initMaxHeight();
-			}
-		};
-
-		const initMaxHeight = function() {
-			const maxHeightx = content.value?.scrollHeight;
-			if (maxHeight.value == "0px") {
-				maxHeight.value = `${maxHeightx}px`;
-			} else {
-				maxHeight.value = `0px`;
-			}
-		};
-
-		const mouseover = function() {
-			if (props.disabled) return;
-			let maxHeightx = content.value?.scrollHeight;
-			if (openHover) {
-				maxHeight.value = `${maxHeightx}px`;
-			}
-		};
-
-		const mouseout = function() {
-			if (openHover) {
-				maxHeight.value = `0px`;
-			}
+		disabled: {
+			type: Boolean,
+			default: false
 		}
-
-		onMounted(() => {
-
-			window.addEventListener("resize", changeHeight);
-			const maxHeightx = content.value?.scrollHeight;
-			if (props.open) {
-				maxHeight.value = `${maxHeightx}px`;
-			}
-
-		});
-
-		onBeforeUnmount(() => {
-			window.removeEventListener("resize", changeHeight);
-		});
-
-		watch(maxHeight, () => {
-			emitChange?.call(null, null);
-		});
-
+	},
+	data () {
 		return {
-			mouseover,
-			mouseout,
-			initMaxHeight,
-			maxHeight,
-			accordion,
-			openHover,
-			styleContent,
-			dataReady,
-			changeHeight,
-			toggleContent,
-			content
-		}
-
-	},
-	watch: {
-		ready(newVal, oldVal) {
-			if (oldVal != newVal && newVal) {
-				this.initMaxHeight();
+			maxHeight: "0px",
+			arrow: "keyboard_arrow_down",
+			isOpen: false,
+			styleContent: {
+				maxHeight: "0px"
 			}
+		};
+	},
+	methods: {
+		toggleContent () {
+			if (this.disabled) return;
+			if (this.isOpen) {
+				this.maxHeight = "0px";
+				this.arrow = "keyboard_arrow_down";
+				this.isOpen = false;
+			}
+			else {
+				this.maxHeight = this.$refs.content.scrollHeight + "px";
+				this.arrow = "keyboard_arrow_up";
+				this.isOpen = true;
+			}
+			this.styleContent = {
+				maxHeight: this.maxHeight
+			};
 		},
+		mouseover () {
+			if (this.disabled) return;
+			this.$el.style.backgroundColor = "#ffffff22";
+		},
+		mouseout () {
+			if (this.disabled) return;
+			this.$el.style.backgroundColor = "#ffffff00";
+		}
 	}
-});
+};
 </script>
 
 <style lang="scss" scoped>
-details > summary {
-  padding: 2px 6px;
-  cursor: pointer;
-  list-style: none;
-}
 .tu-collapse-item {
 	border-bottom: 1px solid rgba(0,0,0,0.04);
 	cursor: pointer;
@@ -220,7 +135,7 @@ details > summary {
 	padding: 10px;
 	padding-top: 0px;
 	font-size: 0.85rem;
-	opacity: 1;
+	opacity: 0.2;
 	transition: all 0.25s ease;
 }
 </style>

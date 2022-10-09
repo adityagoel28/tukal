@@ -1132,6 +1132,7 @@ export default defineComponent({
 
 		provide("appRouter", null);
 		provide("iconPackGlobal", "material-icons-outlined");
+		
 		/*
         waves
         corners
